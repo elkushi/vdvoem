@@ -1,0 +1,935 @@
+<meta charset="utf-8">
+<title>Вдвоём</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Onest:wght@400;500;700&display=swap">
+<style>
+:root{
+  --void:#0B1024; --deep:#141C36; --navy:#22305C; --navy-3:#3A4B7A;
+  --cream:#F5EFE4; --cream-2:#E4D9C6;
+  --beret:#C0202B; --beret-lo:#8E141D;
+  --rose:#A9535F; --gold:#F2B93B; --gold-lo:#B9821A;
+  --go:#43A047; --go-lo:#2E7031;
+  --ember:#E2542A;
+  --disp:'Fredoka','Trebuchet MS',system-ui,sans-serif;
+  --ui:'Onest','Segoe UI',system-ui,-apple-system,sans-serif;
+  --s:1;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--void);color:var(--cream);font-family:var(--ui);
+  overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+#stage{position:fixed;inset:0;display:grid;place-items:center;
+  background:radial-gradient(130% 100% at 50% 0%, #243256 0%, #141C36 55%, #090D1C 100%)}
+#wrap{position:relative;width:min(100vw,calc(100vh*16/9));height:min(100vh,calc(100vw*9/16));
+  overflow:hidden;box-shadow:0 calc(18px*var(--s)) calc(60px*var(--s)) rgba(0,0,0,.6)}
+canvas{display:block;width:100%;height:100%}
+
+/* ---------- HUD ---------- */
+#hud{position:absolute;inset:0;pointer-events:none;padding:calc(16px*var(--s));
+  display:flex;align-items:flex-start;justify-content:space-between;gap:calc(10px*var(--s))}
+.card{background:rgba(11,16,36,.78);border:calc(3px*var(--s)) solid rgba(255,255,255,.13);
+  border-radius:calc(14px*var(--s));backdrop-filter:blur(6px);
+  box-shadow:0 calc(4px*var(--s)) 0 rgba(0,0,0,.4)}
+.pcard{display:flex;align-items:center;gap:calc(9px*var(--s));
+  padding:calc(7px*var(--s)) calc(14px*var(--s)) calc(7px*var(--s)) calc(7px*var(--s))}
+.pcard img{width:calc(40px*var(--s));height:calc(40px*var(--s));border-radius:calc(9px*var(--s));
+  object-fit:cover;border:calc(2px*var(--s)) solid rgba(255,255,255,.2);display:block}
+.pname{font-family:var(--disp);font-weight:600;font-size:calc(16px*var(--s));line-height:1.05;color:#fff}
+.pkeys{font-size:calc(10.5px*var(--s));color:#93A4CF;letter-spacing:.1em;text-transform:uppercase;
+  font-weight:600;margin-top:calc(2px*var(--s))}
+.pcard.down{border-color:var(--beret)}
+.pcard.down .pname{color:var(--beret)}
+
+.mid{display:flex;flex-direction:column;align-items:center;gap:calc(4px*var(--s))}
+.height{font-family:var(--disp);font-weight:700;font-size:calc(44px*var(--s));line-height:1;
+  color:#fff;font-variant-numeric:tabular-nums;text-shadow:0 calc(3px*var(--s)) 0 rgba(0,0,0,.5)}
+.height small{font-size:calc(18px*var(--s));color:#9FB0D8;font-weight:600;margin-left:calc(3px*var(--s))}
+.rec{font-size:calc(12px*var(--s));letter-spacing:.14em;text-transform:uppercase;
+  color:var(--gold);font-weight:700;font-variant-numeric:tabular-nums}
+.rec.beat{color:#fff}
+
+/* ---------- revive bar ---------- */
+#revive{position:absolute;left:50%;top:calc(124px*var(--s));transform:translateX(-50%);
+  width:min(calc(460px*var(--s)),80%);text-align:center;opacity:0;transition:opacity .2s;pointer-events:none}
+#revive.on{opacity:1}
+.rtitle{font-family:var(--disp);font-weight:600;font-size:calc(22px*var(--s));color:#fff;
+  text-shadow:0 calc(2px*var(--s)) 0 rgba(0,0,0,.6);margin-bottom:calc(7px*var(--s))}
+.rbar{height:calc(13px*var(--s));border-radius:99px;background:rgba(11,16,36,.7);
+  border:calc(2px*var(--s)) solid rgba(255,255,255,.2);overflow:hidden}
+.rbar i{display:block;height:100%;width:100%;background:var(--beret);transition:width .08s linear}
+
+/* ---------- touch ---------- */
+#touch{position:absolute;inset:auto 0 0 0;padding:calc(14px*var(--s));
+  display:flex;justify-content:space-between;pointer-events:none}
+#touch[hidden]{display:none}
+#touch .grp{display:flex;gap:calc(10px*var(--s));pointer-events:auto;align-items:flex-end}
+.tbtn{width:max(54px,calc(66px*var(--s)));height:max(54px,calc(66px*var(--s)));
+  border-radius:calc(16px*var(--s));background:rgba(11,16,36,.72);
+  border:calc(3px*var(--s)) solid rgba(255,255,255,.22);color:#fff;
+  font-family:var(--disp);font-size:calc(22px*var(--s));font-weight:600;
+  display:grid;place-items:center;box-shadow:0 calc(4px*var(--s)) 0 rgba(0,0,0,.45)}
+.tbtn:active{transform:translateY(calc(3px*var(--s)));box-shadow:none}
+.tbtn.j{background:rgba(67,160,71,.85);width:max(84px,calc(96px*var(--s)));font-size:calc(15px*var(--s))}
+.tlab{font-size:calc(10px*var(--s));letter-spacing:.12em;text-transform:uppercase;
+  color:#93A4CF;font-weight:700;text-align:center;margin-bottom:calc(5px*var(--s))}
+
+/* ---------- overlay ---------- */
+#ov{position:absolute;inset:0;display:grid;place-items:center;padding:calc(22px*var(--s));
+  background:rgba(9,13,28,.76);backdrop-filter:blur(9px);
+  opacity:0;pointer-events:none;transition:opacity .3s}
+#ov.on{opacity:1;pointer-events:auto}
+.panel{width:min(calc(620px*var(--s)),94%);background:var(--cream);color:var(--navy);
+  border-radius:calc(22px*var(--s));padding:calc(28px*var(--s)) calc(32px*var(--s)) calc(24px*var(--s));
+  border:calc(4px*var(--s)) solid #fff;text-align:center;
+  box-shadow:0 calc(10px*var(--s)) 0 var(--cream-2), 0 calc(26px*var(--s)) calc(60px*var(--s)) rgba(0,0,0,.55);
+  transform:translateY(calc(14px*var(--s)));transition:transform .3s cubic-bezier(.2,.9,.3,1.2)}
+#ov.on .panel{transform:translateY(0)}
+.panel .eyebrow{font-size:calc(12px*var(--s));letter-spacing:.2em;text-transform:uppercase;
+  color:var(--beret);font-weight:700;margin:0 0 calc(8px*var(--s));max-width:none}
+.panel h1{font-family:var(--disp);font-weight:700;margin:0 0 calc(8px*var(--s));
+  font-size:calc(44px*var(--s));line-height:1.02;text-wrap:balance;color:var(--navy)}
+.panel p{margin:0 auto calc(16px*var(--s));font-size:calc(16px*var(--s));line-height:1.55;
+  max-width:calc(430px*var(--s));color:#43507A;text-wrap:pretty}
+.btn{font-family:var(--disp);font-weight:600;font-size:calc(21px*var(--s));
+  background:var(--go);color:#fff;border:0;border-radius:calc(14px*var(--s));
+  padding:calc(13px*var(--s)) calc(36px*var(--s));cursor:pointer;
+  box-shadow:0 calc(5px*var(--s)) 0 var(--go-lo)}
+.btn:hover{filter:brightness(1.06)}
+.btn:active{transform:translateY(calc(4px*var(--s)));box-shadow:0 calc(1px*var(--s)) 0 var(--go-lo)}
+.btn:focus-visible{outline:calc(3px*var(--s)) solid var(--navy);outline-offset:calc(3px*var(--s))}
+
+.duo{display:flex;align-items:center;justify-content:center;gap:calc(14px*var(--s));
+  margin-bottom:calc(14px*var(--s))}
+.duo img{width:calc(78px*var(--s));height:calc(78px*var(--s));border-radius:calc(16px*var(--s));
+  object-fit:cover;border:calc(4px*var(--s)) solid #fff;
+  box-shadow:0 calc(5px*var(--s)) calc(14px*var(--s)) rgba(0,0,0,.3)}
+.duo span{font-family:var(--disp);font-size:calc(26px*var(--s));color:var(--beret);font-weight:600}
+
+.tally{display:flex;justify-content:center;gap:calc(26px*var(--s));margin:calc(2px*var(--s)) 0 calc(18px*var(--s));flex-wrap:wrap}
+.tally div{text-align:center}
+.tally b{display:block;font-family:var(--disp);font-size:calc(32px*var(--s));color:var(--navy);
+  font-weight:700;font-variant-numeric:tabular-nums;line-height:1}
+.tally span{font-size:calc(11px*var(--s));letter-spacing:.14em;text-transform:uppercase;
+  color:#7984AC;font-weight:600}
+.keys{display:flex;gap:calc(14px*var(--s));justify-content:center;flex-wrap:wrap;
+  margin-top:calc(14px*var(--s));font-size:calc(13px*var(--s));color:#5B6689}
+kbd{font-family:var(--ui);font-weight:700;font-size:calc(11.5px*var(--s));background:#fff;
+  border:calc(2px*var(--s)) solid var(--cream-2);border-bottom-width:calc(4px*var(--s));
+  border-radius:calc(7px*var(--s));padding:calc(3px*var(--s)) calc(8px*var(--s));color:var(--navy)}
+.newrec{font-family:var(--disp);font-weight:700;color:var(--gold);
+  font-size:calc(20px*var(--s));margin-bottom:calc(6px*var(--s))}
+/* на телефоне кнопка звука уезжает наверх, чтобы не лезть под «прыжок» */
+#touch:not([hidden]) ~ #mute{bottom:auto;top:calc(74px*var(--s))}
+#mute{position:absolute;right:calc(14px*var(--s));bottom:calc(14px*var(--s));pointer-events:auto;
+  background:rgba(11,16,36,.7);border:calc(2px*var(--s)) solid rgba(255,255,255,.18);color:#fff;
+  border-radius:calc(11px*var(--s));width:calc(40px*var(--s));height:calc(40px*var(--s));
+  display:grid;place-items:center;cursor:pointer;font-size:calc(16px*var(--s))}
+.btn.ghost{background:transparent;color:var(--navy-3);box-shadow:none;
+  border:calc(2px*var(--s)) solid var(--cream-2);font-size:calc(16px*var(--s));
+  padding:calc(10px*var(--s)) calc(20px*var(--s))}
+.stack{display:flex;flex-direction:column;gap:calc(10px*var(--s));align-items:center}
+.code{font-family:var(--disp);font-weight:700;font-size:calc(58px*var(--s));
+  letter-spacing:.18em;color:var(--navy);background:#fff;border-radius:calc(14px*var(--s));
+  border:calc(3px*var(--s)) dashed var(--cream-2);padding:calc(10px*var(--s)) calc(22px*var(--s));
+  margin:calc(6px*var(--s)) 0}
+input.code-in{font-family:var(--disp);font-weight:700;font-size:calc(34px*var(--s));
+  letter-spacing:.2em;text-align:center;text-transform:uppercase;width:calc(230px*var(--s));
+  border:calc(3px*var(--s)) solid var(--cream-2);border-radius:calc(12px*var(--s));
+  padding:calc(9px*var(--s));color:var(--navy);background:#fff}
+.who{display:flex;gap:calc(8px*var(--s));justify-content:center;margin:calc(4px*var(--s)) 0}
+.who button{font-family:var(--ui);font-weight:600;font-size:calc(14px*var(--s));
+  background:#fff;border:calc(2px*var(--s)) solid var(--cream-2);color:var(--navy);
+  border-radius:99px;padding:calc(8px*var(--s)) calc(16px*var(--s));cursor:pointer}
+.who button.sel{background:var(--navy);color:#fff;border-color:var(--navy)}
+.dots{font-size:calc(14px*var(--s));color:#7984AC;margin-top:calc(6px*var(--s))}
+/* онлайн: один игрок — движение под левый палец, прыжок под правый,
+   середина экрана остаётся свободной, там и происходит игра */
+#touch.solo{justify-content:flex-start}
+#touch.solo .grp:last-child{display:none}
+#touch.solo .tbtn{width:max(60px,calc(74px*var(--s)));height:max(60px,calc(74px*var(--s)))}
+#touch.solo .tbtn.j{position:absolute;right:calc(14px*var(--s));bottom:calc(14px*var(--s));
+  width:max(96px,calc(116px*var(--s)))}
+#touch.solo .tlab{display:none}
+#touch .tbtn{opacity:.84}
+
+#rotate{position:fixed;inset:0;display:none;place-items:center;text-align:center;
+  background:var(--void);color:var(--cream);z-index:60;padding:34px}
+#rotate .in{max-width:22rem}
+#rotate svg{width:72px;height:72px;margin-bottom:18px;animation:tip 2.4s ease-in-out infinite}
+#rotate h2{font-family:var(--disp);font-weight:600;font-size:1.6rem;margin:0 0 .5rem;color:#fff}
+#rotate p{margin:0;font-size:.96rem;line-height:1.6;color:#A8B6DA}
+@keyframes tip{0%,55%,100%{transform:rotate(0)}25%,40%{transform:rotate(-90deg)}}
+@media (orientation:portrait){ #rotate.armed{display:grid} }
+
+@media (prefers-reduced-motion: reduce){ #ov,.panel,.btn,.rbar i,#revive{transition:none}
+  #rotate svg{animation:none;transform:rotate(-90deg)} }
+</style>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+<div id="stage">
+  <div id="wrap">
+    <canvas id="game" width="1280" height="720"></canvas>
+
+    <div id="hud">
+      <div class="card pcard" id="c1">
+        <img id="pf1" alt=""><div><div class="pname" id="n1">Мустафа</div>
+        <div class="pkeys">W A D</div></div>
+      </div>
+
+      <div class="mid">
+        <div class="height"><span id="hM">0</span><small>м</small></div>
+        <div class="rec" id="recLine">рекорд 0 м</div>
+      </div>
+
+      <div class="card pcard" id="c2">
+        <img id="pf2" alt=""><div><div class="pname" id="n2">Алиса</div>
+        <div class="pkeys">← ↑ →</div></div>
+      </div>
+    </div>
+
+    <div id="revive">
+      <div class="rtitle" id="rtitle"></div>
+      <div class="rbar"><i id="rbar"></i></div>
+    </div>
+
+    <div id="touch" hidden>
+      <div class="grp">
+        <div><div class="tlab" id="tl1">Мустафа</div>
+          <div style="display:flex;gap:calc(10px*var(--s))">
+            <button class="tbtn" id="b1l">◀</button>
+            <button class="tbtn" id="b1r">▶</button>
+            <button class="tbtn j" id="b1j">ПРЫЖОК</button>
+          </div></div>
+      </div>
+      <div class="grp">
+        <div><div class="tlab" id="tl2">Алиса</div>
+          <div style="display:flex;gap:calc(10px*var(--s))">
+            <button class="tbtn j" id="b2j">ПРЫЖОК</button>
+            <button class="tbtn" id="b2l">◀</button>
+            <button class="tbtn" id="b2r">▶</button>
+          </div></div>
+      </div>
+    </div>
+
+    <button id="mute" aria-label="Звук">🔊</button>
+    <div id="ov"><div class="panel" id="panel"></div></div>
+  </div>
+</div>
+
+<div id="rotate">
+  <div class="in">
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="7" y="2.5" width="10" height="19" rx="2.2" stroke="#F2B93B" stroke-width="1.6"/>
+      <rect x="10.4" y="18.6" width="3.2" height="1.5" rx=".75" fill="#F2B93B"/>
+    </svg>
+    <h2>Поверни телефон</h2>
+    <p>Играем горизонтально — так видно и платформы, и лаву.</p>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   ВДВОЁМ — кооперативный подъём.
+   Лава снизу, платформы бесконечно вверх. Упал — не умер:
+   пять секунд, чтобы второй успел дотянуться.
+   ============================================================ */
+const CFG = {
+  p1:'Мустафа', p2:'Алиса',
+  fell1:'упал', fell2:'упала',        // род глагола для каждого
+  saved1:'спас',  saved2:'спасла',
+  reviveSecs: 5.0, reviveSecsNet: 9.0,
+  overTitle: 'Не успели',
+  startTitle: 'Вдвоём',
+  startText:'Лава снизу, платформы вверх. Если один падает — у второго есть '
+          + 'пять секунд, чтобы его вытащить. Если не успел — конец обоим.',
+};
+
+const SPRITES = /*__SPRITES__*/{};
+const IMG={};
+
+const cvs=document.getElementById('game'), ctx=cvs.getContext('2d');
+const VW=1280, VH=720;
+
+/* ---------- палитра ---------- */
+const C={ rock:'#7F8BA6', rock2:'#9AA6BE', moss:'#5FA83C', rose:'#A9535F',
+          gold:'#F2B93B', red:'#C0202B', cream:'#E8DFCF', ice:'#8FB7D6' };
+function hex2rgb(h){return [parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];}
+function mix(h,t,a){const c=hex2rgb(h),d=hex2rgb(t);
+  return `rgb(${Math.round(c[0]+(d[0]-c[0])*a)},${Math.round(c[1]+(d[1]-c[1])*a)},${Math.round(c[2]+(d[2]-c[2])*a)})`;}
+const _cc=new Map();
+function shade(h,t,a){let m=_cc.get(h); if(!m){m=new Map();_cc.set(h,m);}
+  let n=m.get(t); if(!n){n=new Map();m.set(t,n);}
+  let v=n.get(a); if(v===undefined){v=mix(h,t,a); n.set(a,v);} return v;}
+const lite=(h,a)=>shade(h,'#ffffff',a), dark=(h,a)=>shade(h,'#0B1024',a);
+const _gc=new Map();
+function faceGrad(col,h){
+  let m=_gc.get(col); if(!m){m=new Map();_gc.set(col,m);}
+  let g=m.get(h);
+  if(!g){ g=ctx.createLinearGradient(0,0,0,h); g.addColorStop(0,col);
+          g.addColorStop(1,dark(col,.18)); m.set(h,g); }
+  return g;
+}
+const DEP=13;
+function part(x,y,w,h,col,opt){
+  opt=opt||{}; const d=opt.depth||DEP;
+  if(opt.alpha!==undefined){ ctx.save(); ctx.globalAlpha=opt.alpha; }
+  ctx.fillStyle=dark(col,.30);
+  ctx.beginPath(); ctx.moveTo(x+w,y); ctx.lineTo(x+w+d,y-d);
+  ctx.lineTo(x+w+d,y+h-d); ctx.lineTo(x+w,y+h); ctx.closePath(); ctx.fill();
+  ctx.fillStyle=lite(col,.24);
+  ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x+d,y-d);
+  ctx.lineTo(x+w+d,y-d); ctx.lineTo(x+w,y); ctx.closePath(); ctx.fill();
+  ctx.save(); ctx.translate(x,y); ctx.fillStyle=faceGrad(col,h);
+  ctx.fillRect(0,0,w,h); ctx.restore();
+  if(opt.studs!==false && w>=28){
+    const n=Math.max(1,Math.round(w/36)), rx=Math.min(8,(w/n)*.26), ry=rx*.55;
+    for(let i=0;i<n;i++){
+      const sx=x+((i+.5)/n)*w+d*.5, sy=y-d*.5;
+      ctx.fillStyle=dark(col,.12);
+      ctx.beginPath(); ctx.ellipse(sx,sy+ry*.55,rx,ry,0,0,6.2832); ctx.fill();
+      ctx.fillStyle=lite(col,.46);
+      ctx.beginPath(); ctx.ellipse(sx,sy-ry*.25,rx,ry,0,0,6.2832); ctx.fill();
+    }
+  }
+  ctx.strokeStyle=dark(col,.42); ctx.lineWidth=1.5;
+  ctx.strokeRect(x+.75,y+.75,w-1.5,h-1.5);
+  if(opt.alpha!==undefined) ctx.restore();
+}
+
+/* ---------- звук ---------- */
+let AC=null, muted=false;
+function ac(){ if(!AC){ try{AC=new (window.AudioContext||window.webkitAudioContext)();}catch(e){} }
+  if(AC&&AC.state==='suspended') AC.resume(); return AC; }
+function tone(f,dur,type,vol,slide,delay){
+  const a=ac(); if(!a||muted) return;
+  const t0=a.currentTime+(delay||0), o=a.createOscillator(), g=a.createGain();
+  o.type=type||'square'; o.frequency.setValueAtTime(f,t0);
+  if(slide) o.frequency.exponentialRampToValueAtTime(Math.max(40,f+slide),t0+dur);
+  g.gain.setValueAtTime(0,t0); g.gain.linearRampToValueAtTime(vol||.05,t0+.012);
+  g.gain.exponentialRampToValueAtTime(.0001,t0+dur);
+  o.connect(g); g.connect(a.destination); o.start(t0); o.stop(t0+dur+.03);
+}
+const SFX={
+  jump:()=>tone(430,.09,'square',.04,200),
+  land:()=>tone(150,.05,'sine',.03,-40),
+  down:()=>{tone(300,.18,'sawtooth',.05,-190); tone(150,.26,'square',.04,-90,.12);},
+  save:()=>{tone(523,.09,'triangle',.06); tone(784,.10,'triangle',.06,0,.08);
+            tone(1046,.18,'triangle',.06,0,.16);},
+  heart:()=>{tone(880,.08,'triangle',.05); tone(1320,.12,'triangle',.045,0,.06);},
+  over:()=>{[440,330,247].forEach((f,i)=>tone(f,.30,'sawtooth',.05,0,i*.15));},
+  rec:()=>{[523,659,784,1046,1318].forEach((f,i)=>tone(f,.28,'triangle',.06,0,i*.1));},
+};
+
+/* ---------- ввод ---------- */
+const K1={l:false,r:false,j:false}, K2={l:false,r:false,j:false};
+let buf1=0, buf2=0;
+addEventListener('keydown',e=>{
+  if(e.code==='KeyA') K1.l=true;
+  if(e.code==='KeyD') K1.r=true;
+  if(e.code==='KeyW'||e.code==='Space'){ K1.j=true; buf1=.13; if(e.code==='Space') e.preventDefault(); }
+  if(e.code==='ArrowLeft'){ K2.l=true; e.preventDefault(); }
+  if(e.code==='ArrowRight'){ K2.r=true; e.preventDefault(); }
+  if(e.code==='ArrowUp'){ K2.j=true; buf2=.13; e.preventDefault(); }
+  if(NET.on && NET.me===1){                 // онлайн: WASD тоже ведут меня
+    if(e.code==='KeyA') K2.l=true;
+    if(e.code==='KeyD') K2.r=true;
+    if(e.code==='KeyW'||e.code==='Space'){ K2.j=true; buf2=.13; }
+  }
+  if(e.code==='KeyR' && state==='over') restart();
+  if(e.code==='KeyM') toggleMute();
+});
+addEventListener('keyup',e=>{
+  if(e.code==='KeyA') K1.l=false;
+  if(e.code==='KeyD') K1.r=false;
+  if(e.code==='KeyW'||e.code==='Space') K1.j=false;
+  if(e.code==='ArrowLeft') K2.l=false;
+  if(e.code==='ArrowRight') K2.r=false;
+  if(e.code==='ArrowUp') K2.j=false;
+  if(NET.on && NET.me===1){
+    if(e.code==='KeyA') K2.l=false;
+    if(e.code==='KeyD') K2.r=false;
+    if(e.code==='KeyW'||e.code==='Space') K2.j=false;
+  }
+});
+function hold(el,on,off){
+  const d=e=>{e.preventDefault();on();}, u=e=>{e.preventDefault();off();};
+  el.addEventListener('pointerdown',d); el.addEventListener('pointerup',u);
+  el.addEventListener('pointerleave',u); el.addEventListener('pointercancel',u);
+}
+function MK(){ return (NET.on && NET.me===1) ? K2 : K1; }
+hold(document.getElementById('b1l'),()=>MK().l=true,()=>MK().l=false);
+hold(document.getElementById('b1r'),()=>MK().r=true,()=>MK().r=false);
+hold(document.getElementById('b1j'),()=>{MK().j=true; if(NET.on&&NET.me===1) buf2=.13; else buf1=.13;},
+     ()=>MK().j=false);
+hold(document.getElementById('b2l'),()=>K2.l=true,()=>K2.l=false);
+hold(document.getElementById('b2r'),()=>K2.r=true,()=>K2.r=false);
+hold(document.getElementById('b2j'),()=>{K2.j=true;buf2=.13;},()=>K2.j=false);
+const TOUCH = matchMedia('(hover:none) and (pointer:coarse)').matches;
+if(TOUCH){
+  document.getElementById('touch').hidden=false;
+  document.getElementById('rotate').classList.add('armed');
+}
+
+/* ---------- физика ---------- */
+const GRAV=2450, RUN=330, JUMPV=860, MAXFALL=1150, PW=40, PH=76;
+const ROW=108;                       // шаг по вертикали (прыжок берёт ~151)
+let pathX=VW/2;                      // «тропа»: ведём её, чтобы подъём всегда был возможен
+
+// mulberry32: одинаковое зерно -> одинаковый мир на обоих телефонах.
+// Математика мира обязана быть детерминированной, иначе онлайн рассинхронится.
+let _seed=1, _rs=1;
+function setSeed(n){ _seed=n>>>0; _rs=_seed; }
+function rnd(){
+  _rs |= 0; _rs = (_rs + 0x6D2B79F5) | 0;
+  let t = Math.imul(_rs ^ (_rs >>> 15), 1 | _rs);
+  t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+let state='intro';                   // intro | play | over
+let plats=[], hearts=[], parts=[];
+let topRow=0, lavaY=0, startY=0, best=0, T=0, runT=0;
+let lavaBoost=0, hid=0;              // сердца двигают лаву; id нужен для онлайна
+let partnerSaves=0;                  // сколько раз меня вытащили (онлайн)
+let cam={y:0}, rec=loadRec();
+
+function mkP(name,x,sprR,sprL,sprF){
+  return {name,x,y:0,vx:0,vy:0,on:false,face:1,coy:0,anim:0,
+          down:false,downT:0,saves:0,sprR,sprL,sprF};
+}
+let P1=mkP('p1',VW*0.40,'moustafa_faceR','moustafa_faceL','moustafa_front');
+let P2=mkP('p2',VW*0.60,'alisa_faceR','alisa_faceL','alisa_front');
+const PL=[P1,P2];
+
+function loadRec(){
+  try{ const r=JSON.parse(localStorage.getItem('vdvoem')||'{}');
+       return {best:r.best|0, runs:r.runs|0, s1:r.s1|0, s2:r.s2|0}; }
+  catch(e){ return {best:0,runs:0,s1:0,s2:0}; }
+}
+function saveRec(){ try{ localStorage.setItem('vdvoem',JSON.stringify(rec)); }catch(e){} }
+
+function addRow(y){
+  pathX += (rnd()-0.5)*260;                         // сдвиг не больше дальности прыжка
+  pathX = Math.max(110, Math.min(VW-110, pathX));
+  const w0 = 130 + rnd()*110;
+  plats.push({x:Math.max(20,Math.min(VW-w0-20, pathX-w0/2)), y, w:w0, h:26,
+              c: rnd()<0.16 ? C.moss : (rnd()<0.5?C.rock:C.rock2)});
+  const extra = (rnd()<0.55?1:0) + (rnd()<0.15?1:0);
+  for(let i=0;i<extra;i++){
+    const w = 100 + rnd()*110;
+    const bx = rnd()*(VW-w-40)+20;
+    if(Math.abs(bx+w/2 - pathX) < 150) continue;     // не дублируем тропу
+    plats.push({x:bx, y, w, h:26,
+                c: rnd()<0.16 ? C.moss : (rnd()<0.5?C.rock:C.rock2)});
+  }
+  if(rnd()<0.20) hearts.push({id:hid++, x:60+rnd()*(VW-120), y:y-46, got:false, ph:rnd()*6.3});
+}
+function ensureRows(){
+  while(topRow > cam.y - VH*1.4){ topRow -= ROW; addRow(topRow); }
+  const cut = cam.y + VH + 400;
+  plats = plats.filter(p=>p.y < cut);
+  hearts = hearts.filter(h=>h.y < cut && !h.got);
+}
+
+function reset(){
+  plats=[]; hearts=[]; parts=[]; T=0; runT=0;
+  const base=420;
+  pathX=VW/2;                         // тропа ведётся от старта, а не от прошлого забега
+  plats.push({x:VW*0.5-300, y:base, w:600, h:30, c:C.rock2});
+  topRow=base;
+  for(let i=0;i<14;i++){ topRow-=ROW; addRow(topRow); }
+  startY=base;
+  cam.y = base - VH*0.62;
+  lavaBoost=0; hid=0; lavaY = base + 460;
+  for(const p of PL){
+    p.y=base-PH; p.vx=0; p.vy=0; p.on=true; p.coy=0; p.down=false; p.downT=0; p.saves=0;
+  }
+  P1.x=VW*0.42; P2.x=VW*0.56;
+  best=0; updHUD();
+}
+
+function hit(ax,ay,aw,ah,b){ return ax<b.x+b.w && ax+aw>b.x && ay<b.y+b.h && ay+ah>b.y; }
+
+function stepP(p,K,bufRef,dt){
+  if(p.down){                                 // дух медленно всплывает
+    p.y -= 52*dt; p.downT -= dt;
+    return;
+  }
+  const dir=(K.r?1:0)-(K.l?1:0);
+  const acc=p.on?3400:2100;
+  p.vx += (dir*RUN - p.vx) * Math.min(1, acc*dt/RUN);
+  if(!dir) p.vx *= p.on?0.74:0.95;
+  if(dir) p.face=dir;
+  if(p.on){ p.coy=.12; } else p.coy=Math.max(0,p.coy-dt);
+  if(bufRef.v>0 && p.coy>0){ p.vy=-JUMPV; p.on=false; p.coy=0; bufRef.v=0; SFX.jump(); }
+  if(p.vy<0 && !K.j) p.vy += GRAV*1.5*dt;
+  p.vy = Math.min(MAXFALL, p.vy + GRAV*dt);
+
+  p.x += p.vx*dt;
+  if(p.x<10){p.x=10;p.vx=0;} if(p.x>VW-PW-10){p.x=VW-PW-10;p.vx=0;}
+
+  const wasOn=p.on, impact=p.vy; p.on=false;
+  p.y += p.vy*dt;
+  for(const b of plats){
+    if(!hit(p.x,p.y,PW,PH,b)) continue;
+    if(p.vy>0 && p.y+PH-p.vy*dt <= b.y+6){     // только сверху — платформы проходимы снизу
+      p.y=b.y-PH; p.vy=0; p.on=true;
+      if(!wasOn && impact>260) SFX.land();
+    }
+  }
+  p.anim += Math.abs(p.vx)*dt*0.035;
+  p.y = Math.max(p.y, cam.y+24);               // потолок экрана держит пару вместе
+}
+
+function goDown(p){
+  if(p.down) return;
+  p.down=true; p.downT = NET.on?CFG.reviveSecsNet:CFG.reviveSecs; p.vx=0; p.vy=0; p.on=false;
+  SFX.down(); burst(p.x+PW/2,p.y+PH/2,C.red,16);
+  if(NET.on){ netSend(true); const o=them();
+    if(o.down){ netEvent({t:'over', h:best}); return gameOver(); } return; }
+  const other = p===P1?P2:P1;
+  if(other.down) return gameOver();
+}
+function revive(p,by){
+  p.down=false; p.downT=0; p.vy=-260; p.on=false;
+  by.saves++; SFX.save(); burst(p.x+PW/2,p.y+PH/2,'#FFFFFF',20);
+  updHUD();
+}
+
+function step(dt){
+  T+=dt; runT+=dt;
+  buf1=Math.max(0,buf1-dt); buf2=Math.max(0,buf2-dt);
+
+  if(NET.on){
+    // свой игрок — локально и мгновенно; чужой — сглаженно по сети
+    const m=me(), o=them(), r={v:NET.me===0?buf1:buf2};
+    stepP(m, NET.me===0?K1:K2, r, dt);
+    if(NET.me===0) buf1=r.v; else buf2=r.v;
+    if(REMOTE){
+      o.x += (REMOTE.x-o.x)*Math.min(1,dt*14);
+      o.y += (REMOTE.y-o.y)*Math.min(1,dt*14);
+      o.face=REMOTE.face; o.on=REMOTE.on;
+      o.down=REMOTE.down; o.downT=REMOTE.downT;
+    }
+    // я вытаскиваю его
+    if(o.down && !m.down && hit(m.x,m.y,PW,PH,{x:o.x-14,y:o.y-14,w:PW+28,h:PH+28})){
+      o.down=false; o.downT=0; m.saves++; SFX.save();
+      burst(o.x+PW/2,o.y+PH/2,'#FFFFFF',20); netEvent({t:'revive'}); updHUD();
+    }
+    // меня не успели
+    if(m.down && m.downT<=0){ netEvent({t:'over', h:best}); return gameOver(); }
+    netSend(false);
+  } else {
+    const r1={v:buf1}, r2={v:buf2};
+    stepP(P1,K1,r1,dt); stepP(P2,K2,r2,dt);
+    buf1=r1.v; buf2=r2.v;
+    for(const p of PL){
+      if(!p.down) continue;
+      const o = p===P1?P2:P1;
+      if(!o.down && hit(o.x,o.y,PW,PH,{x:p.x-6,y:p.y-6,w:PW+12,h:PH+12})) revive(p,o);
+      else if(p.downT<=0) return gameOver();
+    }
+  }
+
+  // лава
+  // чистая функция времени: одинаковая на обоих устройствах
+  lavaY = startY + 460 - (22*runT + 0.165*runT*runT) + lavaBoost;
+  const mine = NET.on ? [me()] : PL;
+  for(const p of mine){
+    if(p.down) continue;
+    if(p.y+PH > lavaY) goDown(p);
+    else if(p.y > cam.y+VH+70) goDown(p);      // отстал и выпал снизу
+  }
+
+  // сердца: опускают лаву
+  for(const h of hearts){
+    if(h.got) continue;
+    for(const p of PL){
+      if(p.down) continue;
+      if(hit(p.x,p.y,PW,PH,{x:h.x-20,y:h.y-20,w:40,h:40})){
+        h.got=true; lavaBoost += 210; SFX.heart(); burst(h.x,h.y,C.red,14);
+        if(NET.on) netEvent({t:'heart', id:h.id}); break;
+      }
+    }
+  }
+
+  // камера ведёт нижнего — убежать вперёд нельзя
+  const alive=PL.filter(p=>!p.down);
+  const lowY = alive.length? Math.max(...alive.map(p=>p.y)) : Math.max(P1.y,P2.y);
+  const want = lowY - VH*0.62;
+  cam.y += (Math.min(cam.y, want)-cam.y) * Math.min(1, dt*3.4);   // только вверх
+  ensureRows();
+
+  const h = Math.max(0, Math.floor((startY-PH-Math.min(P1.y,P2.y))/10));
+  if(h>best){ best=h; updHUD(); }
+
+  let np=0;
+  for(let i=0;i<parts.length;i++){
+    const q=parts[i]; q.vy+=1500*dt; q.x+=q.vx*dt; q.y+=q.vy*dt;
+    q.r+=q.vr*dt; q.life-=dt; if(q.life>0) parts[np++]=q;
+  }
+  parts.length=np;
+}
+
+function burst(x,y,col,n){
+  for(let i=0;i<n;i++) parts.push({x,y,vx:(Math.random()-.5)*400,
+    vy:-Math.random()*380-70, r:Math.random()*6, vr:(Math.random()-.5)*14,
+    s:5+Math.random()*6, c:col, life:.45+Math.random()*.5});
+}
+
+/* ---------- отрисовка ---------- */
+let _bgGrad=null;
+function draw(){
+  if(!_bgGrad){ _bgGrad=ctx.createLinearGradient(0,0,0,VH);
+    _bgGrad.addColorStop(0,'#1A2648'); _bgGrad.addColorStop(.55,'#2C3A66');
+    _bgGrad.addColorStop(1,'#4A3A5E'); }
+  ctx.fillStyle=_bgGrad; ctx.fillRect(0,0,VW,VH);
+
+  // звёзды-параллакс
+  for(let i=0;i<46;i++){
+    const sx=(i*197)%VW, sy=((i*131) - cam.y*0.22)%VH;
+    const yy = sy<0? sy+VH : sy;
+    ctx.fillStyle = i%3? 'rgba(255,255,255,.26)':'rgba(242,185,59,.34)';
+    ctx.fillRect(sx, yy, 3, 3);
+  }
+
+  ctx.save(); ctx.translate(0,-Math.round(cam.y));
+
+  for(const b of plats) part(b.x,b.y,b.w,b.h,b.c);
+
+  for(const h of hearts){
+    if(h.got) continue;
+    const yy=h.y+Math.sin(T*2.4+h.ph)*6;
+    ctx.fillStyle=C.red;
+    ctx.beginPath(); ctx.ellipse(h.x-8,yy,10,10,0,0,6.2832); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(h.x+8,yy,10,10,0,0,6.2832); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(h.x-17,yy+4); ctx.lineTo(h.x+17,yy+4);
+    ctx.lineTo(h.x,yy+24); ctx.closePath(); ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,.4)';
+    ctx.beginPath(); ctx.ellipse(h.x-9,yy-4,3.5,4,0,0,6.2832); ctx.fill();
+  }
+
+  for(const p of PL) drawP(p);
+
+  // лава
+  const ly=lavaY;
+  ctx.save(); ctx.shadowColor='rgba(255,120,40,.9)'; ctx.shadowBlur=40;
+  ctx.fillStyle='#C63A16'; ctx.fillRect(0,ly,VW,VH*2); ctx.restore();
+  const lg=ctx.createLinearGradient(0,ly,0,ly+160);
+  lg.addColorStop(0,'#FF9B3D'); lg.addColorStop(.3,'#EE5B22'); lg.addColorStop(1,'#A62D0E');
+  ctx.fillStyle=lg; ctx.fillRect(0,ly,VW,VH*2);
+  for(let i=0;i<14;i++){
+    const bx=i*95+Math.sin(T*1.1+i*1.7)*26;
+    ctx.fillStyle='rgba(255,214,120,.5)';
+    ctx.fillRect(bx, ly+3+Math.sin(T*2.4+i*.8)*3, 58+Math.sin(T*1.9+i)*16, 7);
+  }
+  ctx.fillStyle='rgba(255,240,190,.8)'; ctx.fillRect(0,ly,VW,4);
+
+  for(const q of parts){
+    ctx.save(); ctx.globalAlpha=Math.min(1,q.life*1.8);
+    ctx.translate(q.x,q.y); ctx.rotate(q.r);
+    ctx.fillStyle=q.c; ctx.fillRect(-q.s/2,-q.s/2,q.s,q.s*.66); ctx.restore();
+  }
+  ctx.restore();
+}
+
+function drawP(p){
+  const moving=Math.abs(p.vx)>26;
+  const name = p.down ? p.sprF : (moving ? (p.face>0?p.sprR:p.sprL) : p.sprF);
+  const img=IMG[name]; if(!img) return;
+  const H=88, w=img.width*(H/img.height);
+  const cx=p.x+PW/2, by=p.y+PH;
+  ctx.save();
+  if(p.down){
+    const pulse=.45+Math.abs(Math.sin(T*5))*.3;
+    ctx.globalAlpha=pulse;
+    ctx.shadowColor='rgba(192,32,43,.9)'; ctx.shadowBlur=28;
+  } else {
+    ctx.fillStyle='rgba(10,14,30,.28)';
+    ctx.beginPath(); ctx.ellipse(cx,by+3,w*.44,7,0,0,6.2832); ctx.fill();
+  }
+  const bob = p.on&&moving? Math.abs(Math.sin(p.anim*3))*4 : 0;
+  ctx.translate(cx, by-H/2-bob);
+  ctx.drawImage(img,-w/2,-H/2,w,H);
+  ctx.restore();
+  if(p.down){
+    ctx.fillStyle='#fff'; ctx.font='600 20px Fredoka, sans-serif';
+    ctx.textAlign='center';
+    ctx.fillText(Math.ceil(p.downT), cx, p.y-14);
+  }
+}
+
+/* ============================================================
+   ОНЛАЙН. Каждый телефон считает СВОЕГО игрока сам и шлёт его
+   состояние; чужого рисуем по приходящим пакетам. Мир一 общий
+   за счёт общего зерна, лава — чистая функция времени.
+   ============================================================ */
+const FB = /*__FIREBASE__*/null;          // сюда сборка кладёт конфиг
+
+const NET = {
+  on:false, ready:false, db:null, room:null, code:'', me:0,
+  peerSeen:0, last:0, rate:1/20, seen:{}, joined:false
+};
+let REMOTE = null;                        // сглаженное состояние партнёра
+
+function netAvailable(){ return !!(FB && window.firebase); }
+function netInit(){
+  if(NET.db || !netAvailable()) return !!NET.db;
+  try{ firebase.initializeApp(FB); NET.db = firebase.database(); }
+  catch(e){ try{ NET.db = firebase.database(); }catch(e2){ return false; } }
+  return !!NET.db;
+}
+function roomCode(){
+  const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let c='';
+  for(let i=0;i<4;i++) c+=A[Math.floor(Math.random()*A.length)];
+  return c;
+}
+function netEvent(ev){
+  if(!NET.on || !NET.room) return;
+  ev.by = NET.me; NET.room.child('ev').push(ev);
+}
+function netAttach(){
+  const r=NET.room;
+  r.child('p'+(1-NET.me)).on('value', sn=>{
+    const v=sn.val(); if(!v) return;
+    NET.peerSeen=performance.now();
+    REMOTE = REMOTE || {x:v.x,y:v.y,vx:0,vy:0,face:1,down:false,on:false,sx:v.x,sy:v.y};
+    REMOTE.x=v.x; REMOTE.y=v.y; REMOTE.face=v.f||1;
+    REMOTE.down=!!v.d; REMOTE.on=!!v.g; REMOTE.downT=v.dt||0;
+  });
+  r.child('ev').on('child_added', sn=>{
+    const e=sn.val(); if(!e || e.by===NET.me) return;
+    if(NET.seen[sn.key]) return; NET.seen[sn.key]=1;
+    if(e.t==='heart'){ const h=hearts.find(x=>x.id===e.id);
+      if(h && !h.got){ h.got=true; lavaBoost+=210; } }
+    else if(e.t==='revive'){ const m=me();
+      if(m.down){ m.down=false; m.downT=0; m.vy=-260; SFX.save(); partnerSaves++; updHUD(); } }
+    else if(e.t==='over'){ if(state==='play'){ best=Math.max(best,e.h|0); gameOver(true); } }
+    else if(e.t==='go'){ startRun(e.seed); }
+  });
+}
+function netSend(force){
+  if(!NET.on || !NET.room) return;
+  const now=performance.now();
+  if(!force && now-NET.last < NET.rate*1000) return;
+  NET.last=now;
+  const m=me();
+  NET.room.child('p'+NET.me).set({
+    x:Math.round(m.x), y:Math.round(m.y), f:m.face,
+    d:m.down?1:0, g:m.on?1:0, dt:+(m.downT||0).toFixed(1)
+  });
+}
+function me(){ return NET.me===0 ? P1 : P2; }
+function them(){ return NET.me===0 ? P2 : P1; }
+
+async function hostRoom(asP1){
+  if(!netInit()) return alert('Firebase не настроен');
+  NET.on=true; NET.me = asP1?0:1; NET.code=roomCode();
+  NET.room = NET.db.ref('rooms/'+NET.code);
+  await NET.room.set({host:NET.me, ts:Date.now()});
+  NET.room.onDisconnect().remove();
+  netAttach();
+  waitScreen(true);
+  NET.room.child('p'+(1-NET.me)).on('value', sn=>{
+    if(sn.val() && !NET.joined){ NET.joined=true;
+      const sd=(Math.random()*1e9)|0; netEvent({t:'go', seed:sd}); startRun(sd); }
+  });
+}
+async function joinRoom(code, asP1){
+  if(!netInit()) return alert('Firebase не настроен');
+  code=(code||'').toUpperCase().trim();
+  const ref=NET.db.ref('rooms/'+code);
+  const sn=await ref.get();
+  if(!sn.exists()) return alert('Комната '+code+' не найдена');
+  NET.on=true; NET.me = asP1?0:1; NET.code=code; NET.room=ref;
+  netAttach(); waitScreen(false);
+  netSend(true);                          // показаться хосту -> он пришлёт go
+}
+function netLeave(){
+  try{ if(NET.room){ NET.room.child('p'+NET.me).remove(); NET.room.off(); } }catch(e){}
+  NET.on=false; NET.room=null; NET.joined=false; REMOTE=null; NET.seen={};
+}
+
+/* ---------- HUD / экраны ---------- */
+const ov=document.getElementById('ov'), panel=document.getElementById('panel');
+function openOv(h){ panel.innerHTML=h; ov.classList.add('on'); }
+function closeOv(){ ov.classList.remove('on'); }
+function updHUD(){
+  document.getElementById('hM').textContent=best;
+  const rl=document.getElementById('recLine');
+  rl.textContent='рекорд '+rec.best+' м';
+  rl.classList.toggle('beat', best>rec.best && rec.best>0);
+  document.getElementById('c1').classList.toggle('down',P1.down);
+  document.getElementById('c2').classList.toggle('down',P2.down);
+}
+function updRevive(){
+  const d = P1.down?P1 : (P2.down?P2:null);
+  const el=document.getElementById('revive');
+  if(!d || state!=='play'){ el.classList.remove('on'); return; }
+  el.classList.add('on');
+  const who  = d===P1?CFG.p1:CFG.p2;
+  const fell = d===P1?CFG.fell1:CFG.fell2;
+  const by   = d===P1?CFG.p2:CFG.p1;
+  document.getElementById('rtitle').textContent = who+' '+fell+'. '+by+', быстрее!';
+  const full = NET.on?CFG.reviveSecsNet:CFG.reviveSecs;
+  document.getElementById('rbar').style.width=(100*Math.max(0,d.downT)/full)+'%';
+}
+
+let pickP1 = true;                 // кем я играю в онлайне
+function intro(){
+  state='intro'; netLeave(); soloControls(false);
+  openOv(`<div class="duo">
+      <img src="${SPRITES.moustafa_portrait}" alt="">
+      <span>+</span>
+      <img src="${SPRITES.alisa_portrait}" alt=""></div>
+    <h1>${CFG.startTitle}</h1>
+    <p>${CFG.startText}</p>
+    <div class="stack">
+      <button class="btn" id="goLocal">На одном экране</button>
+      <button class="btn ghost" id="goNet">Онлайн — с разных телефонов</button>
+    </div>
+    <div class="keys">
+      <span><kbd>A</kbd><kbd>D</kbd><kbd>W</kbd> — ${CFG.p1}</span>
+      <span><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd> — ${CFG.p2}</span>
+    </div>`);
+  document.getElementById('goLocal').onclick=()=>{
+    ac(); setSeed((Math.random()*1e9)|0); closeOv(); reset(); state='play'; };
+  document.getElementById('goNet').onclick=()=>{ ac(); netMenu(); };
+}
+
+function whoRow(){
+  return `<div class="who">
+    <button id="wA" class="${pickP1?'sel':''}">Я — ${CFG.p1}</button>
+    <button id="wB" class="${pickP1?'':'sel'}">Я — ${CFG.p2}</button></div>`;
+}
+function bindWho(){
+  const a=document.getElementById('wA'), b=document.getElementById('wB');
+  if(!a) return;
+  a.onclick=()=>{pickP1=true;a.classList.add('sel');b.classList.remove('sel');};
+  b.onclick=()=>{pickP1=false;b.classList.add('sel');a.classList.remove('sel');};
+}
+function netMenu(){
+  if(!netAvailable()){
+    openOv(`<p class="eyebrow">онлайн недоступен</p><h1>Нет связи</h1>
+      <p>Онлайн работает только на опубликованной версии (GitHub Pages),
+         где подключён Firebase. На одном экране играется всегда.</p>
+      <button class="btn" id="bk">Назад</button>`);
+    document.getElementById('bk').onclick=intro; return;
+  }
+  openOv(`<p class="eyebrow">онлайн</p><h1>Играем вдвоём</h1>
+    <p>Один создаёт комнату и диктует код, второй его вводит.</p>
+    ${whoRow()}
+    <div class="stack">
+      <button class="btn" id="mk">Создать комнату</button>
+      <input class="code-in" id="cin" maxlength="4" placeholder="КОД">
+      <button class="btn ghost" id="jn">Войти по коду</button>
+      <button class="btn ghost" id="bk">Назад</button>
+    </div>`);
+  bindWho();
+  document.getElementById('mk').onclick=()=>hostRoom(pickP1);
+  document.getElementById('jn').onclick=()=>
+    joinRoom(document.getElementById('cin').value, pickP1);
+  document.getElementById('bk').onclick=intro;
+}
+function waitScreen(isHost){
+  state='intro'; soloControls(true);
+  openOv(`<p class="eyebrow">комната</p>
+    ${isHost?`<div class="code">${NET.code}</div>
+      <p>Продиктуй этот код. Игра начнётся сама, как только он войдёт.</p>`
+     :`<h1>Подключаемся…</h1><p>Комната ${NET.code}. Ждём старт.</p>`}
+    <div class="dots" id="dots">ждём второго игрока…</div>
+    <button class="btn ghost" id="bk">Отмена</button>`);
+  document.getElementById('bk').onclick=()=>{ netLeave(); soloControls(false); intro(); };
+}
+function soloControls(on){
+  document.getElementById('touch').classList.toggle('solo', !!on);
+}
+
+function gameOver(fromNet){
+  if(state!=='play') return;
+  if(NET.on && !fromNet) netSend(true);
+  state='over';
+  const isRec = best>rec.best;
+  rec.runs++; rec.s1+=P1.saves; rec.s2+=P2.saves;
+  if(isRec) rec.best=best;
+  saveRec(); updHUD(); updRevive();
+  if(isRec){ SFX.rec(); for(let i=0;i<90;i++) parts.push({
+      x:Math.random()*VW, y:cam.y-Math.random()*300, vx:(Math.random()-.5)*160,
+      vy:Math.random()*120+40, r:Math.random()*6, vr:(Math.random()-.5)*12,
+      s:7+Math.random()*8, c:[C.gold,C.red,'#4FC3F7','#fff'][i%4], life:2.6+Math.random()*2});
+  } else SFX.over();
+  setTimeout(()=>openOv(`
+    ${isRec?'<p class="newrec">НОВЫЙ РЕКОРД</p>':''}
+    <p class="eyebrow">забег ${rec.runs}</p>
+    <h1>${isRec? best+' м' : CFG.overTitle}</h1>
+    ${isRec?'':`<p>Поднялись на <b>${best} м</b>. Рекорд — ${rec.best} м.</p>`}
+    <div class="tally">
+      <div><b>${best}</b><span>метров</span></div>
+      ${isRec?'':`<div><b>${rec.best}</b><span>рекорд</span></div>`}
+      ${NET.on
+        ? `<div><b>${me().saves}</b><span>вытащил ты</span></div>
+           <div><b>${partnerSaves}</b><span>вытащили тебя</span></div>`
+        : `<div><b>${P1.saves}</b><span>${CFG.saved1} ${CFG.p1}</span></div>
+           <div><b>${P2.saves}</b><span>${CFG.saved2} ${CFG.p2}</span></div>`}
+    </div>
+    <p>Всего вы вытащили друг друга <b>${rec.s1+rec.s2}</b> раз за ${rec.runs} забегов.</p>
+    <button class="btn" id="again">Ещё раз</button>
+    <div class="keys"><span>или <kbd>R</kbd></span></div>`), 900);
+  setTimeout(()=>{ const b=document.getElementById('again'); if(b) b.onclick=restart; },1000);
+}
+function startRun(seed){
+  setSeed((seed>>>0)||1); partnerSaves=0; closeOv(); reset(); state='play'; netSend(true);
+}
+function restart(){
+  if(NET.on){ const sd=(Math.random()*1e9)|0; netEvent({t:'go', seed:sd}); return startRun(sd); }
+  setSeed((Math.random()*1e9)|0); closeOv(); reset(); state='play';
+}
+function toggleMute(){ muted=!muted; document.getElementById('mute').textContent=muted?'🔇':'🔊'; }
+document.getElementById('mute').onclick=toggleMute;
+
+/* ---------- масштаб / цикл ---------- */
+function rescale(){
+  const w=document.getElementById('wrap').clientWidth;
+  document.documentElement.style.setProperty('--s',(w/VW).toFixed(4));
+  const dpr=Math.min(2,devicePixelRatio||1);
+  cvs.width=VW*dpr; cvs.height=VH*dpr;
+  ctx.setTransform(dpr,0,0,dpr,0,0); ctx.imageSmoothingQuality='high';
+  _bgGrad=null; _gc.clear();
+}
+addEventListener('resize',rescale);
+
+let last=0, acc=0; const FIXED=1/120;
+function loop(ts){
+  requestAnimationFrame(loop);
+  const dt=Math.min(.033,(ts-last)/1000||0); last=ts;
+  if(state==='play'){
+    acc+=dt; let g=0;
+    while(acc>=FIXED && g++<8){ step(FIXED); acc-=FIXED; if(state!=='play'){acc=0;break;} }
+  } else {
+    T+=dt; let np=0;
+    for(let i=0;i<parts.length;i++){ const q=parts[i];
+      q.vy+=420*dt; q.x+=q.vx*dt; q.y+=q.vy*dt; q.r+=q.vr*dt; q.life-=dt;
+      if(q.life>0) parts[np++]=q; }
+    parts.length=np;
+  }
+  updRevive();
+  draw();
+}
+
+function boot(){
+  document.getElementById('pf1').src=SPRITES.moustafa_portrait;
+  document.getElementById('pf2').src=SPRITES.alisa_portrait;
+  document.getElementById('n1').textContent=CFG.p1;
+  document.getElementById('n2').textContent=CFG.p2;
+  document.getElementById('tl1').textContent=CFG.p1;
+  document.getElementById('tl2').textContent=CFG.p2;
+  rescale();
+  const names=Object.keys(SPRITES); let left=names.length;
+  names.forEach(n=>{ const im=new Image();
+    im.onload=im.onerror=()=>{ if(--left===0) ready(); }; im.src=SPRITES[n]; IMG[n]=im; });
+  if(!names.length) ready();
+}
+function ready(){ reset(); state='intro'; updHUD(); intro(); requestAnimationFrame(loop); }
+boot();
+</script>

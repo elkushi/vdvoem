@@ -1,0 +1,4 @@
+# Firebase config is injected at build time; keep the real one out of git
+firebase.json
+__pycache__/
+*.pyc
