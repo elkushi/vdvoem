@@ -444,6 +444,7 @@ function reset(){
   lavaBoost=0; hid=0; lavaY = base + 460;
   for(const p of PL){
     p.y=base-PH; p.vx=0; p.vy=0; p.on=true; p.coy=0; p.down=false; p.downT=0; p.saves=0;
+    p.pendRev=false;
   }
   P1.x=VW*0.42; P2.x=VW*0.56;
   best=0; updHUD();
@@ -510,11 +511,15 @@ function step(dt){
       o.x += (REMOTE.x-o.x)*Math.min(1,dt*14);
       o.y += (REMOTE.y-o.y)*Math.min(1,dt*14);
       o.face=REMOTE.face; o.on=REMOTE.on;
-      o.down=REMOTE.down; o.downT=REMOTE.downT;
+      // пока спасение не подтверждено с его стороны, не возвращаем ему «упал»:
+      // иначе спасение срабатывало бы каждый кадр до конца круга по сети
+      if(o.pendRev){ if(!REMOTE.down) o.pendRev=false; }
+      else { o.down=REMOTE.down; o.downT=REMOTE.downT; }
     }
     // я вытаскиваю его
-    if(o.down && !m.down && hit(m.x,m.y,PW,PH,{x:o.x-14,y:o.y-14,w:PW+28,h:PH+28})){
-      o.down=false; o.downT=0; m.saves++; SFX.save();
+    if(o.down && !m.down && !o.pendRev &&
+       hit(m.x,m.y,PW,PH,{x:o.x-14,y:o.y-14,w:PW+28,h:PH+28})){
+      o.down=false; o.downT=0; o.pendRev=true; m.saves++; SFX.save();
       burst(o.x+PW/2,o.y+PH/2,'#FFFFFF',20); netEvent({t:'revive'}); updHUD();
     }
     // меня не успели
